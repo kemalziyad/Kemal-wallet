@@ -1,0 +1,199 @@
+<!-- ==============================
+📄 index.html
+Main App UI
+================================ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kemal Wallet</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header>
+    <img src="assets/logo.png" alt="Kemal Wallet Logo" class="logo">
+    <h1>Kemal Wallet</h1>
+  </header>
+
+  <main>
+    <!-- Registration / Login -->
+    <section id="auth-section">
+      <h2>Register / Sign In</h2>
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <button onclick="register()">Register</button>
+      <button onclick="login()">Login</button>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dashboard" style="display:none;">
+      <h2>Wallet Dashboard</h2>
+      <p>Welcome, <span id="userDisplay"></span></p>
+      <p><strong>Balance:</strong> $<span id="balance">0.00</span></p>
+
+      <!-- Send Money -->
+      <div class="card">
+        <h3>Send Money</h3>
+        <select id="currency">
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+        </select>
+        <input type="text" id="recipient" placeholder="Recipient Username">
+        <input type="number" id="amount" placeholder="Amount">
+        <button onclick="sendMoney()">Send</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+
+<!-- ==============================
+📄 style.css
+Modern Responsive Styles
+================================ -->
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f8f9fa;
+  color: #333;
+  text-align: center;
+}
+header {
+  background: #fff;
+  padding: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.logo {
+  width: 40px;
+  margin-right: 10px;
+}
+h1 { color: #222; }
+main { padding: 20px; }
+input, select {
+  display: block;
+  margin: 10px auto;
+  padding: 10px;
+  width: 80%;
+  max-width: 300px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+button {
+  margin: 5px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+}
+button:hover { background: #444; }
+.card {
+  background: #fff;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-top: 20px;
+}
+</style>
+
+<!-- ==============================
+📄 script.js
+Wallet Logic + LocalStorage
+================================ -->
+<script>
+let users = JSON.parse(localStorage.getItem("users")) || {};
+let currentUser = null;
+
+function register() {
+  let username = document.getElementById("username").value;
+  let password = document.getElementById("password").value;
+  if (!username || !password) return alert("Enter username & password");
+  if (users[username]) return alert("User already exists");
+
+  users[username] = { password, balance: 100 };
+  localStorage.setItem("users", JSON.stringify(users));
+  alert("Registration successful. Login now.");
+}
+
+function login() {
+  let username = document.getElementById("username").value;
+  let password = document.getElementById("password").value;
+
+  if (users[username] && users[username].password === password) {
+    currentUser = username;
+    document.getElementById("auth-section").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    document.getElementById("userDisplay").textContent = username;
+    updateBalance();
+  } else {
+    alert("Invalid login");
+  }
+}
+
+function updateBalance() {
+  document.getElementById("balance").textContent = users[currentUser].balance.toFixed(2);
+}
+
+function sendMoney() {
+  let recipient = document.getElementById("recipient").value;
+  let amount = parseFloat(document.getElementById("amount").value);
+  if (!recipient || isNaN(amount) || amount <= 0) return alert("Enter valid details");
+  if (!users[recipient]) return alert("Recipient not found");
+  if (users[currentUser].balance < amount) return alert("Insufficient funds");
+
+  users[currentUser].balance -= amount;
+  users[recipient].balance += amount;
+  localStorage.setItem("users", JSON.stringify(users));
+  updateBalance();
+  alert("Transaction successful!");
+}
+</script>
+
+<!-- ==============================
+📄 manifest.json
+PWA Settings
+================================ -->
+<script type="application/json" id="manifest">
+{
+  "name": "Kemal Wallet",
+  "short_name": "Wallet",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#222222",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
+</script>
+
+<!-- ==============================
+📄 service-worker.js
+Offline Cache
+================================ -->
+<script id="sw">
+const CACHE_NAME = "kemal-wallet-cache-v1";
+const urlsToCache = ["index.html","style.css","script.js","manifest.json"];
+
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+});
+
+self.addEventListener("fetch", event => {
+  event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));
+});
+</script>
