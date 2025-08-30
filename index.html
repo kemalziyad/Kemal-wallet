@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kemal Wallet</title>
+  <style>
+    :root{
+      --bg:#f6f7f9;--card:#fff;--text:#0f172a;--muted:#64748b;
+      --border:#e5e7eb;--primary:#2563eb;--primary-600:#1d4ed8;
+      --shadow:0 10px 30px rgba(2,6,23,.06);--ring:rgba(37,99,235,.35);
+      --radius:16px;
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      color:var(--text);background:var(--bg)}
+    /* App shell */
+    .app{min-height:100vh;display:grid;grid-template-rows:auto 1fr auto}
+    .topbar{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;
+      padding:12px 18px;background:#eef1f5cc;backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand .logo{height:28px;width:auto}
+    .brand .name{font-weight:700;letter-spacing:.2px}
+    .btn{border:1px solid var(--border);background:var(--card);padding:10px 14px;border-radius:999px;cursor:pointer}
+    .btn:hover{box-shadow:var(--shadow)}
+    .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .btn-primary:hover{background:var(--primary-600)}
+    .btn-ghost{background:transparent}
+    .hidden{display:none !important}
+
+    /* Screens */
+    .screen{display:none;padding:28px 14px}
+    .screen.active{display:block}
+    .center{display:flex;align-items:center;justify-content:center}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+      box-shadow:var(--shadow);padding:18px}
+
+    /* Welcome */
+    .welcome{max-width:520px;text-align:center}
+    .welcome h1{margin:.4rem 0 0}
+    .welcome p{color:var(--muted);margin:.2rem 0 1rem}
+
+    /* Auth */
+    .auth{max-width:430px;width:100%}
+    .tabs{display:flex;gap:10px;margin-bottom:12px}
+    .tab{flex:1;padding:10px;border-radius:12px;border:1px solid var(--border);background:#f8fafc;cursor:pointer}
+    .tab.active{background:#e8eefc;border-color:#c7d2fe;color:#1e3a8a;font-weight:600}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+    label{font-size:.9rem;color:var(--muted)}
+    input,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;outline:none;font-size:1rem;background:#fff}
+    input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--ring)}
+
+    /* Dashboard */
+    .dash{width:100%;max-width:1100px;margin:0 auto;padding:22px 12px 28px}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media (min-width:900px){.grid{grid-template-columns:360px 1fr}}
+    .balance-val{font-size:2rem;font-weight:700;letter-spacing:.3px}
+    .muted{color:var(--muted);font-size:.92rem}
+    .two-col{display:grid;grid-template-columns:1fr 160px;gap:10px}
+    .fx-box{padding:10px 12px;border:1px dashed var(--border);border-radius:12px;background:#f8fafc;font-size:.95rem;margin:8px 0 12px}
+    .history-head{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .filters{display:flex;gap:8px;flex-wrap:wrap}
+    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+    th{background:#f8fafc;color:#0b1220;font-weight:600}
+    tr:last-child td{border-bottom:0}
+
+    /* Footer */
+    footer{padding:16px 12px;text-align:center;background:#eef1f5;border-top:1px solid var(--border);color:#111827}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sticky Header -->
+    <header class="topbar">
+      <div class="brand">
+        <!-- Inline SVG logo: blue wallet symbol + black/dark text -->
+        <svg class="logo" viewBox="0 0 200 50" aria-hidden="true">
+          <rect x="5" y="9" width="40" height="28" rx="6" ry="6" fill="#2563eb"/>
+          <circle cx="40" cy="23" r="5" fill="#fff"/>
+        </svg>
+        <span class="name">Kemal Wallet</span>
+      </div>
+      <button id="logoutBtn" class="btn btn-ghost hidden" type="button">Logout</button>
+    </header>
+
+    <!-- Welcome -->
+    <main id="welcome" class="screen active center">
+      <section class="card welcome">
+        <svg width="140" height="40" viewBox="0 0 200 50" aria-hidden="true">
+          <rect x="5" y="9" width="40" height="28" rx="6" ry="6" fill="#2563eb"/>
+          <circle cx="40" cy="23" r="5" fill="#fff"/>
+          <text x="60" y="30" font-family="ui-sans-serif, system-ui, Segoe UI, Arial" font-size="18" fill="#111827">Kemal Wallet</text>
+        </svg>
+        <h1>Welcome to Kemal Wallet</h1>
+        <p>Your trusted E-Money solution.</p>
+        <button class="btn btn-primary" type="button" id="startBtn">Get Started</button>
+      </section>
+    </main>
+
+    <!-- Auth -->
+    <main id="auth" class="screen center hidden">
+      <section class="card auth">
+        <div class="tabs">
+          <button id="tabLogin" class="tab active" type="button">Login</button>
+          <button id="tabSignup" class="tab" type="button">Sign Up</button>
+        </div>
+
+        <div id="loginPanel">
+          <div class="field"><label>Email</label><input id="loginEmail" type="email" placeholder="you@example.com" /></div>
+          <div class="field"><label>Password</label><input id="loginPassword" type="password" placeholder="••••••••" /></div>
+          <button class="btn btn-primary" id="loginBtn" type="button">Login</button>
+        </div>
+
+        <div id="signupPanel" class="hidden">
+          <div class="field"><label>Full Name</label><input id="signupName" type="text" placeholder="Your full name" /></div>
+          <div class="field"><label>Email</label><input id="signupEmail" type="email" placeholder="you@example.com" /></div>
+          <div class="field"><label>Password</label><input id="signupPassword" type="password" placeholder="Create a password" /></div>
+          <button class="btn btn-primary" id="signupBtn" type="button">Create Account</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Dashboard -->
+    <main id="dashboard" class="screen hidden">
+      <section class="dash">
+        <div class="grid">
+          <!-- Balance -->
+          <div class="card">
+            <h2>Wallet Balance</h2>
+            <p class="balance-val"><span id="balanceVal">0.00</span> <span class="muted" id="balanceCur">ETB</span></p>
+            <p class="muted">Demo only — balances are stored in your browser.</p>
+          </div>
+
+          <!-- Send Money -->
+          <div class="card">
+            <h2>Send Money</h2>
+            <div class="field"><label>Recipient (email)</label><input id="recipient" type="email" placeholder="friend@example.com" /></div>
+            <div class="field two-col">
+              <div><label>Amount</label><input id="amount" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+              <div>
+                <label>Send Currency</label>
+                <select id="sendCurrency">
+                  <option value="ETB" selected>ETB</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+            </div>
+            <div id="fxBox" class="fx-box">Select amount and currency to preview conversion.</div>
+            <button class="btn btn-primary" id="sendBtn" type="button">Send</button>
+          </div>
+
+          <!-- History -->
+          <div class="card" style="grid-column:1/-1">
+            <div class="history-head">
+              <h2>Transactions</h2>
+              <div class="filters">
+                <input id="filterRecipient" type="text" placeholder="Search recipient..." />
+                <input id="filterDate" type="date" />
+                <select id="filterType">
+                  <option value="all">All</option>
+                  <option value="sent">Sent</option>
+                  <option value="received">Received</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="txTable">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Reference</th>
+                    <th>Type</th>
+                    <th>Recipient</th>
+                    <th>Amount</th>
+                    <th>Currency</th>
+                    <th>ETB Equivalent</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      © 2025 Kemal Wallet – All Rights Reserved
+    </footer>
+  </div>
+
+  <script>
+    /* ========================
+       Simple Local Storage DB
+       ======================== */
+    function getUsers(){ return JSON.parse(localStorage.getItem("kw_users")||"[]"); }
+    function saveUsers(users){ localStorage.setItem("kw_users", JSON.stringify(users)); }
+    function findUser(email){ return getUsers().find(u=>u.email===email); }
+    function upsertUser(user){
+      const users = getUsers().filter(u=>u.email!==user.email);
+      users.push(user); saveUsers(users);
+    }
+    function setSession(user){ localStorage.setItem("kw_session", JSON.stringify(user)); }
+    function getSession(){ const u = localStorage.getItem("kw_session"); return u?JSON.parse(u):null; }
+    function clearSession(){ localStorage.removeItem("kw_session"); }
+
+    /* ========================
+       UI Helpers
+       ======================== */
+    const $ = sel=>document.querySelector(sel);
+    const show = id => { $(".screen.active")?.classList.remove("active"); $("#"+id).classList.add("active"); };
+    const hideEl = el => el.classList.add("hidden");
+    const showEl = el => el.classList.remove("hidden");
+    const nowISO = ()=> new Date().toISOString().split("T")[0];
+    const randRef = ()=> "TX" + Math.floor(Math.random()*1e6).toString().padStart(6,"0");
+
+    /* ========================
+       Auth
+       ======================== */
+    $("#startBtn").addEventListener("click", ()=>{ show("auth"); $("#auth").classList.remove("hidden"); $("#welcome").classList.add("hidden"); });
+
+    $("#tabLogin").addEventListener("click", ()=>{
+      $("#tabLogin").classList.add("active"); $("#tabSignup").classList.remove("active");
+      $("#loginPanel").classList.remove("hidden"); $("#signupPanel").classList.add("hidden");
+    });
+    $("#tabSignup").addEventListener("click", ()=>{
+      $("#tabSignup").classList.add("active"); $("#tabLogin").classList.remove("active");
+      $("#signupPanel").classList.remove("hidden"); $("#loginPanel").classList.add("hidden");
+    });
+
+    $("#signupBtn").addEventListener("click", ()=>{
+      const name = $("#signupName").value.trim();
+      const email = $("#signupEmail").value.trim().toLowerCase();
+      const password = $("#signupPassword").value;
+      if(!name||!email||!password){ alert("Fill all fields."); return; }
+      if(findUser(email)){ alert("User already exists."); return; }
+      const user = { name,email,password, currency:"ETB", balance:5000, transactions:[] };
+      upsertUser(user);
+      alert("Registered! Please log in.");
+      $("#tabLogin").click();
+    });
+
+    $("#loginBtn").addEventListener("click", ()=>{
+      const email = $("#loginEmail").value.trim().toLowerCase();
+      const password = $("#loginPassword").value;
+      const user = findUser(email);
+      if(!user || user.password!==password){ alert("Invalid credentials."); return; }
+      setSession(user);
+      startDashboard();
+    });
+
+    $("#logoutBtn").addEventListener("click", ()=>{
+      clearSession();
+      $("#logoutBtn").classList.add("hidden");
+      show("auth");
+    });
+
+    /* ========================
+       Dashboard
+       ======================== */
+    async function startDashboard(){
+      const user = getSession(); if(!user) return;
+      $("#welcome").classList.add("hidden");
+      $("#auth").classList.add("hidden");
+      $("#dashboard").classList.remove("hidden");
+      show("dashboard");
+      $("#logoutBtn").classList.remove("hidden");
+      updateBalanceUI();
+      renderHistory();
+      updateFxPreview();
+    }
+
+    function updateBalanceUI(){
+      const user = getSession(); if(!user) return;
+      $("#balanceVal").textContent = (user.balance||0).toFixed(2);
+      $("#balanceCur").textContent = user.currency || "ETB";
+    }
+
+    // Preview conversion text
+    async function updateFxPreview(){
+      const amt = parseFloat($("#amount").value);
+      const cur = $("#sendCurrency").value;
+      const user = getSession(); if(!user){ $("#fxBox").textContent="—"; return; }
+      if(!amt || amt<=0){ $("#fxBox").textContent = "Select amount and currency to preview conversion."; return; }
+      if(user.currency===cur){ $("#fxBox").textContent = `No conversion needed (sending ${cur}).`; return; }
+      try{
+        // Use convert endpoint for precise result
+        const url = `https://api.exchangerate.host/convert?from=${encodeURIComponent(user.currency)}&to=${encodeURIComponent(cur)}&amount=${encodeURIComponent(amt)}`;
+        const res = await fetch(url); const data = await res.json();
+        if(!data || typeof data.result!=="number") throw new Error("No rate");
+        $("#fxBox").textContent = `${amt.toFixed(2)} ${user.currency} ≈ ${data.result.toFixed(2)} ${cur} (live rate)`;
+      }catch(e){
+        $("#fxBox").textContent = "Could not fetch live rate. Check internet and try again.";
+      }
+    }
+
+    $("#amount").addEventListener("input", updateFxPreview);
+    $("#sendCurrency").addEventListener("change", updateFxPreview);
+
+    // Send money
+    $("#sendBtn").addEventListener("click", async ()=>{
+      const recipient = $("#recipient").value.trim().toLowerCase();
+      const amt = parseFloat($("#amount").value);
+      const target = $("#sendCurrency").value;
+      let user = getSession();
+      if(!user){ alert("Please log in again."); return; }
+      if(!recipient || !amt || amt<=0){ alert("Enter recipient and a valid amount."); return; }
+      if(amt > user.balance){ alert("Insufficient balance."); return; }
+
+      let converted = amt;
+      try{
+        if(user.currency !== target){
+          const url = `https://api.exchangerate.host/convert?from=${encodeURIComponent(user.currency)}&to=${encodeURIComponent(target)}&amount=${encodeURIComponent(amt)}`;
+          const res = await fetch(url); const data = await res.json();
+          if(!data || typeof data.result!=="number") throw new Error("No result");
+          converted = data.result;
+        }
+      }catch(e){
+        alert("Currency conversion failed. Please try again.");
+        return;
+      }
+
+      // Deduct in user's base currency
+      user.balance = (user.balance||0) - amt;
+
+      const tx = {
+        ref: randRef(),
+        type: "sent",
+        date: nowISO(),
+        recipient,
+        amount: Number(converted.toFixed(2)),
+        currency: target,
+        etb_equiv: await toEtb(target, converted)
+      };
+      user.transactions = user.transactions || [];
+      user.transactions.unshift(tx); // newest first
+      upsertUser(user);
+      setSession(user);
+      updateBalanceUI();
+      renderHistory();
+      $("#recipient").value=""; $("#amount").value="";
+      updateFxPreview();
+      alert(`Sent ${tx.amount.toFixed(2)} ${target} to ${recipient}. Ref: ${tx.ref}`);
+    });
+
+    // Convert any currency to ETB for the "ETB Equivalent" column
+    async function toEtb(fromCur, amount){
+      if(fromCur==="ETB") return Number(amount.toFixed(2));
+      try{
+        const url = `https://api.exchangerate.host/convert?from=${encodeURIComponent(fromCur)}&to=ETB&amount=${encodeURIComponent(amount)}`;
+        const r = await fetch(url); const d = await r.json();
+        if(!d || typeof d.result!=="number") return amount;
+        return Number(d.result.toFixed(2));
+      }catch{ return amount; }
+    }
+
+    // History rendering + filters
+    function renderHistory(){
+      const user = getSession(); if(!user) return;
+      const tbody = $("#txTable tbody");
+      tbody.innerHTML = "";
+      const q = ($("#filterRecipient").value||"").toLowerCase();
+      const d = $("#filterDate").value;
+      const t = $("#filterType").value;
+
+      (user.transactions||[])
+        .filter(tx=>{
+          const mRec = !q || (tx.recipient||"").toLowerCase().includes(q);
+          const mDate = !d || (tx.date||"").startsWith(d);
+          const mType = t==="all" || tx.type===t;
+          return mRec && mDate && mType;
+        })
+        .forEach(tx=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${tx.date||""}</td>
+            <td>${tx.ref||""}</td>
+            <td>${tx.type||""}</td>
+            <td>${tx.recipient||""}</td>
+            <td>${Number(tx.amount).toFixed(2)}</td>
+            <td>${tx.currency||""}</td>
+            <td>${Number(tx.etb_equiv??0).toFixed(2)} ETB</td>
+          `;
+          tbody.appendChild(tr);
+        });
+    }
+
+    $("#filterRecipient").addEventListener("input", renderHistory);
+    $("#filterDate").addEventListener("change", renderHistory);
+    $("#filterType").addEventListener("change", renderHistory);
+
+    // Auto session
+    (function boot(){
+      const session = getSession();
+      if(session){ startDashboard(); }
+    })();
+  </script>
+</body>
+</html>
